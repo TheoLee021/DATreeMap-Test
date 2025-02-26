@@ -18,7 +18,10 @@ class TreeAdmin(GISModelAdmin):
         )
     search_fields = (
         'tag_number', 
-        'common_name', 'botanical_name', 'notes')
+        'common_name', 
+        'botanical_name', 
+        'notes',
+        )
     
     # Display the map in the admin interface
     gis_widget_kwargs = {

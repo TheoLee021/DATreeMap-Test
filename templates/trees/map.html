@@ -1,24 +1,31 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>De Anza Campus Tree Map</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
+    <!-- MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
+    <!-- MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 </head>
 <body>
     <header>
         <div class="logo">De Anza Campus Tree Map</div>
         <nav>
             <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Tree List</a></li>
+                <li><a href="{% url 'trees:map' %}">Home</a></li>
+                <li><a href="/admin/">Admin</a></li>
                 <li><a href="#">About</a></li>
                 <li><a href="#">Contact</a></li>
             </ul>
@@ -32,7 +39,7 @@
     <footer>
         <div class="footer-content">
             <div class="organization">Environmental Monitoring Society</div>
-            <div class="copyright">&copy; 2023 All Rights Reserved</div>
+            <div class="copyright">&copy; 2025 All Rights Reserved</div>
             <div class="links">
                 <a href="#">Privacy Policy</a>
                 <a href="#">Terms of Service</a>
@@ -40,6 +47,11 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script>
+        // API URL 설정
+        const TREE_DATA_URL = "{% url 'trees:tree_data' %}";
+        const TREE_DETAIL_URL = "/api/trees/"; // 태그 번호가 뒤에 추가됨
+    </script>
+    <script src="{% static 'js/map.js' %}"></script>
 </body>
 </html> 
