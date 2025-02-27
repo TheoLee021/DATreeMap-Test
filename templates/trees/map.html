@@ -62,15 +62,16 @@
 
     <!-- Data and tree details script -->
     <script>
-        // API endpoint settings
-        const TREE_DATA_URL = "{% url 'trees:tree_data' %}";
+        // API endpoint settings - DRF API로 전환하므로 제거
+        // const TREE_DATA_URL = "{% url 'trees:tree_data' %}";
         
         /**
          * Function to view tree details
          * @param {number} tagNumber - Tree tag number
          */
         function viewTreeDetails(tagNumber) {
-            fetch(`/api/trees/${tagNumber}/`)
+            // DRF API 상세 정보 엔드포인트 사용
+            fetch(`/api/rest/trees/${tagNumber}/`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -78,7 +79,16 @@
                     return response.json();
                 })
                 .then(treeData => {
-                    displayTreeDetails(treeData);
+                    // id가 tag_number이므로 feature.id도 확인
+                    const properties = treeData.properties || treeData;
+                    const tagNumber = treeData.id || properties.tag_number;
+                    
+                    // id를 tag_number로 추가
+                    if (!properties.tag_number && treeData.id) {
+                        properties.tag_number = treeData.id;
+                    }
+                    
+                    displayTreeDetails(properties);
                 })
                 .catch(error => {
                     console.error('Error fetching tree details:', error);

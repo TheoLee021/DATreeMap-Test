@@ -29,7 +29,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to load tree data from API
     function loadTreesFromAPI() {
-        fetch(TREE_DATA_URL)
+        // DRF API URL로 변경
+        const apiUrl = '/api/rest/trees/';
+        // const apiUrl = TREE_DATA_URL;  // 기존 URL 주석 처리
+        
+        fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -37,13 +41,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(geojsonData => {
-                console.log("API 응답:", geojsonData);
-                displayTreesFromGeoJSON(geojsonData);
+                // DRF API는 다른 형식으로 응답할 수 있음
+                const finalData = apiUrl.includes('/rest/') ? processDrfResponse(geojsonData) : geojsonData;
+                // const finalData = geojsonData;  // 기존 형식 주석 처리
+                
+                console.log("API 응답:", finalData);
+                displayTreesFromGeoJSON(finalData);
             })
             .catch(error => {
                 console.error('Error loading API data:', error);
-                // 오류 상황 대응 코드
+                // 오류 처리
             });
+    }
+    
+    // DRF 응답 처리 헬퍼 함수 (나중에 사용)
+    function processDrfResponse(response) {
+        // 페이지네이션이 없으므로 응답을 그대로 반환
+        return response;
     }
     
     // Declare global variables
@@ -215,11 +229,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const latlng = L.latLng(coords[1], coords[0]);
             const properties = feature.properties;
             
-            // 디버깅을 위해 속성 로깅
-            console.log("마커 생성 시 속성:", properties);
+            // 디버깅을 위해 속성 로깅 및 Feature ID 확인
+            console.log("마커 생성 시 속성:", properties, "Feature ID:", feature.id);
             
-            // 기존 코드로 복원
-            const tagNumber = properties.tag_number || properties.tag_id || properties.id || properties.tree_id || 'N/A';
+            // feature.id를 tag_number로 사용 (중요!)
+            const tagNumber = feature.id || 'N/A';
             
             const marker = L.marker(latlng, { icon: treeIcon });
             

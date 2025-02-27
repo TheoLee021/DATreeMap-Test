@@ -47,10 +47,13 @@ SYSTEM_APPS = [
 
 ADDITIONAL_APPS = [
     'django.contrib.gis',
+    'rest_framework',
+    'rest_framework_gis',
 ]
 
 INSTALLED_APPS = SYSTEM_APPS + CUSTUM_APPS + ADDITIONAL_APPS
 
+# 먼저 MIDDLEWARE 정의
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -150,3 +153,10 @@ GDAL_LIBRARY_PATH = '/opt/homebrew/lib/libgdal.dylib'
 
 # GEOS 라이브러리 경로 설정 (필요할 수 있음)
 GEOS_LIBRARY_PATH = '/opt/homebrew/lib/libgeos_c.dylib'
+
+# REST Framework 설정 (settings.py 맨 아래에 추가)
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ],
+}
