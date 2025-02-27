@@ -2,27 +2,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Basic meta tags -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive map of trees on De Anza College campus">
+    <meta name="keywords" content="De Anza College, trees, campus map, biodiversity">
     <title>De Anza Campus Tree Map</title>
+    
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <!-- Leaflet library -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
-    <!-- MarkerCluster CSS -->
+    <!-- MarkerCluster plugin -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     
+    <!-- Leaflet JS library -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
-    <!-- MarkerCluster JS -->
+    <!-- MarkerCluster plugin -->
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 </head>
 <body>
-    <header>
+    <!-- Header area -->
+    <header role="banner">
         <div class="logo">De Anza Campus Tree Map</div>
-        <nav>
+        <nav role="navigation" aria-label="Main Navigation">
             <ul>
                 <li><a href="{% url 'trees:map' %}">Home</a></li>
                 <li><a href="/admin/">Admin</a></li>
@@ -32,11 +40,16 @@
         </nav>
     </header>
 
-    <main>
-        <div id="map"></div>
+    <!-- Main content area -->
+    <main role="main">
+        <!-- Map container -->
+        <section id="map-container">
+            <div id="map" aria-label="Interactive campus tree map"></div>
+        </section>
     </main>
 
-    <footer>
+    <!-- Footer area -->
+    <footer role="contentinfo">
         <div class="footer-content">
             <div class="organization">Environmental Monitoring Society</div>
             <div class="copyright">&copy; 2025 All Rights Reserved</div>
@@ -47,11 +60,114 @@
         </div>
     </footer>
 
+    <!-- Data and tree details script -->
     <script>
-        // API URL 설정
+        // API endpoint settings
         const TREE_DATA_URL = "{% url 'trees:tree_data' %}";
-        const TREE_DETAIL_URL = "/api/trees/"; // 태그 번호가 뒤에 추가됨
+        
+        /**
+         * Function to view tree details
+         * @param {number} tagNumber - Tree tag number
+         */
+        function viewTreeDetails(tagNumber) {
+            fetch(`/api/trees/${tagNumber}/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(treeData => {
+                    displayTreeDetails(treeData);
+                })
+                .catch(error => {
+                    console.error('Error fetching tree details:', error);
+                    alert(`Error loading details for tree Tag #${tagNumber}`);
+                });
+        }
+        
+        /**
+         * Function to display tree details modal
+         * @param {object} treeData - Tree data object
+         */
+        function displayTreeDetails(treeData) {
+            // Create modal container
+            const modal = document.createElement('div');
+            modal.className = 'tree-modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-labelledby', 'tree-modal-title');
+            
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.className = 'tree-modal-content';
+            
+            // Create close button
+            const closeButton = document.createElement('button');
+            closeButton.className = 'tree-modal-close';
+            closeButton.innerHTML = '&times;';
+            closeButton.setAttribute('aria-label', 'Close dialog');
+            closeButton.onclick = function() {
+                document.body.removeChild(modal);
+            };
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && document.body.contains(modal)) {
+                    document.body.removeChild(modal);
+                }
+            });
+            
+            // Generate tree info HTML
+            let detailsHtml = '<div class="tree-details">';
+            detailsHtml += `<h2 id="tree-modal-title">${treeData.common_name || 'Unknown Tree'}</h2>`;
+            
+            if (treeData.botanical_name) {
+                detailsHtml += `<p class="botanical-name"><em>${treeData.botanical_name}</em></p>`;
+            }
+            
+            // Create tree attributes table
+            detailsHtml += '<table class="tree-attributes">';
+            detailsHtml += `<tr><th>Tag #:</th><td>${treeData.tag_number}</td></tr>`;
+            
+            if (treeData.height) {
+                detailsHtml += `<tr><th>Height:</th><td>${treeData.height}</td></tr>`;
+            }
+            if (treeData.diameter) {
+                detailsHtml += `<tr><th>Diameter:</th><td>${treeData.diameter}</td></tr>`;
+            }
+            if (treeData.crown_spread) {
+                detailsHtml += `<tr><th>Crown Spread:</th><td>${treeData.crown_spread}</td></tr>`;
+            }
+            if (treeData.last_update) {
+                detailsHtml += `<tr><th>Last Updated:</th><td>${treeData.last_update}</td></tr>`;
+            }
+            detailsHtml += '</table>';
+            
+            if (treeData.notes) {
+                detailsHtml += `<div class="tree-notes"><h3>Notes:</h3><p>${treeData.notes}</p></div>`;
+            }
+            
+            detailsHtml += '</div>';
+            
+            // Add content to modal
+            modalContent.innerHTML = detailsHtml;
+            modalContent.appendChild(closeButton);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Open modal animation
+            setTimeout(() => modal.classList.add('active'), 10);
+            
+            // Close modal on outside click
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
     </script>
+    
+    <!-- Main map script -->
     <script src="{% static 'js/map.js' %}"></script>
 </body>
 </html> 

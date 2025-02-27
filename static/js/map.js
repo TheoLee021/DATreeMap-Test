@@ -10,13 +10,18 @@ document.addEventListener('DOMContentLoaded', function() {
         maxZoom: 20
     }).addTo(map);
     
-    // 트리 아이콘을 심플한 초록색 원으로 변경
+    // Zoom levels definition
+    const ZOOM_LEVELS = {
+        COMBINED: 17,     // Below 17: Show combined view
+        SEPARATE: 17,     // 17 and above: Show separate areas
+        MARKERS_ONLY: 18  // 18 and above: Show markers only, no areas
+    };
+    
+    // Change tree icon to a simple green circle
     const treeIcon = L.divIcon({
         className: 'tree-marker',
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
-        popupAnchor: [0, -6],
-        html: '<div class="tree-dot"></div>'
+        html: '<div class="tree-dot"></div>',
+        iconSize: [12, 12]
     });
     
     // Load tree data from API
@@ -32,41 +37,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(geojsonData => {
+                console.log("API 응답:", geojsonData);
                 displayTreesFromGeoJSON(geojsonData);
             })
             .catch(error => {
                 console.error('Error loading API data:', error);
-                // Fallback to sample data
-                displaySampleTrees();
+                // 오류 상황 대응 코드
             });
     }
     
-    // 전역 변수 선언
+    // Declare global variables
     let combinedCluster = null;
     let areaClusters = {};
     let defaultCluster = null;
     const ZOOM_THRESHOLD = 15;
 
+    // Common cluster options - remove duplicate code
+    function getClusterOptions(radius = 500, customIconFunction) {
+        return {
+            disableClusteringAtZoom: ZOOM_LEVELS.MARKERS_ONLY,
+            spiderfyOnMaxZoom: false,
+            showCoverageOnHover: true,
+            zoomToBoundsOnClick: true,
+            maxClusterRadius: radius,
+            animate: false,
+            animateAddingMarkers: false,
+            iconCreateFunction: customIconFunction
+        };
+    }
+
     // Display trees from GeoJSON with clustering
     function displayTreesFromGeoJSON(geojson) {
-        // 클러스터 영역 정의
+        // Define cluster areas
         const clusterAreas = [
             {
-                name: "서쪽 캠퍼스",
+                name: "West Campus",
                 polygon: [
-                    [37.318, -122.048],  // 첫 번째 꼭지점
-                    [37.322719, -122.049764],  // 두 번째 꼭지점
-                    [37.322753, -122.045215],  // 세 번째 꼭지점
-                    [37.318, -122.045215]   // 네 번째 꼭지점
+                    [37.318, -122.048],
+                    [37.322719, -122.049764],
+                    [37.322753, -122.045215],
+                    [37.318, -122.045215]
                 ],
                 style: {
                     className: 'custom-cluster custom-cluster-west',
-                    color: '#388E3C',
-                    fillColor: '#66BB6A'
+                    color: '#1B5E20',
+                    fillColor: '#1B5E20'
                 }
             },
             {
-                name: "북쪽 캠퍼스",
+                name: "North Campus",
                 polygon: [
                     [37.318, -122.045215],
                     [37.322753, -122.045215], 
@@ -75,12 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 ],
                 style: {
                     className: 'custom-cluster custom-cluster-north',
-                    color: '#1976D2',
-                    fillColor: '#2196F3'
+                    color: '#0b6a3c',
+                    fillColor: '#0b6a3c'
                 }
             },
             {
-                name: "남쪽 캠퍼스",
+                name: "South Campus",
                 polygon: [
                     [37.315603, -122.046578],
                     [37.318, -122.048],
@@ -89,198 +108,291 @@ document.addEventListener('DOMContentLoaded', function() {
                 ],
                 style: {
                     className: 'custom-cluster custom-cluster-south',
-                    color: '#E64A19',
-                    fillColor: '#FF5722'
+                    color: '#006633',
+                    fillColor: '#006633'
                 }
             }
         ];
 
-        // 각 영역을 지도에 시각적으로 표시 (선택 사항)
-        clusterAreas.forEach(area => {
-            L.polygon(area.polygon, {
-                color: area.style.color,
-                weight: 2,
-                fillColor: area.style.fillColor,
-                fillOpacity: 0.1,
-                className: 'area-boundary'
-            }).addTo(map);
-        });
+        // Combined area covering the entire campus
+        const combinedArea = {
+            name: "De Anza College",
+            polygon: [
+                [37.315603, -122.046578],
+                [37.318, -122.048],
+                [37.322753, -122.049764],
+                [37.322753, -122.04157],
+                [37.315603, -122.04157]
+            ],
+            style: {
+                className: 'custom-cluster custom-cluster-combined',
+                color: '#1B5E20',
+                fillColor: '#1B5E20'
+            }
+        };
 
-        // 마커를 영역별로 그룹화하는 함수
-        function createClusters() {
-            // areaClusters 초기화
-            areaClusters = {};
+        // Function to calculate cluster size and style
+        function getClusterSizeAndClass(count) {
+            let size, sizeClass;
             
-            // 통합 클러스터 생성
-            combinedCluster = L.markerClusterGroup({
-                disableClusteringAtZoom: 18,
-                spiderfyOnMaxZoom: false,
-                showCoverageOnHover: true,
-                zoomToBoundsOnClick: true,
-                maxClusterRadius: 250,
-                iconCreateFunction: function(cluster) {
-                    const count = cluster.getChildCount();
-                    let size = count < 10 ? 40 : (count < 100 ? 50 : 60);
-                    
-                    return L.divIcon({
-                        html: '<div><span>' + count + '</span></div>',
-                        className: 'custom-cluster custom-cluster-combined',
-                        iconSize: [size, size]
-                    });
-                }
-            });
+            if (count < 100) {
+                size = 40;
+                sizeClass = 'custom-cluster-small';
+            } else if (count < 500) {
+                size = 50;
+                sizeClass = 'custom-cluster-medium';
+            } else {
+                size = 60;
+                sizeClass = 'custom-cluster-large';
+            }
+            
+            return { size, sizeClass };
+        }
 
-            // 각 영역별 클러스터 생성
-            clusterAreas.forEach(area => {
-                areaClusters[area.name] = L.markerClusterGroup({
-                    disableClusteringAtZoom: 18,
-                    spiderfyOnMaxZoom: false,
-                    showCoverageOnHover: true,
-                    zoomToBoundsOnClick: true,
-                    maxClusterRadius: 250,
-                    iconCreateFunction: function(cluster) {
-                        const count = cluster.getChildCount();
-                        let size;
-                        if (count < 10) size = 40;
-                        else if (count < 100) size = 50;
-                        else size = 60;
-
-                        return L.divIcon({
-                            html: '<div><span>' + count + '</span></div>',
-                            className: area.style.className,
-                            iconSize: [size, size]
-                        });
-                    },
-                    polygonOptions: {
-                        fillColor: area.style.fillColor,
-                        color: area.style.color,
-                        weight: 3,
-                        opacity: 0.5,
-                        fillOpacity: 0.2
-                    }
+        // Function to create area cluster icon
+        function createAreaClusterIcon(area) {
+            return function(cluster) {
+                const count = cluster.getChildCount();
+                const { size, sizeClass } = getClusterSizeAndClass(count);
+                const className = area.style.className + ' ' + sizeClass;
+                
+                return L.divIcon({
+                    html: `<div>
+                            <span class="area-name">${area.name}</span>
+                            <span class="cluster-count">${count}</span>
+                          </div>`,
+                    className: className,
+                    iconSize: [size, size]
                 });
+            };
+        }
+
+        // Function to create combined cluster icon
+        function createCombinedClusterIcon(cluster) {
+            const count = cluster.getChildCount();
+            const { size, sizeClass } = getClusterSizeAndClass(count);
+            
+            return L.divIcon({
+                html: `<div>
+                        <span class="area-name">${combinedArea.name}</span>
+                        <span class="cluster-count">${count}</span>
+                      </div>`,
+                className: 'custom-cluster custom-cluster-combined ' + sizeClass,
+                iconSize: [size, size]
+            });
+        }
+
+        // Function to create default cluster icon
+        function createDefaultClusterIcon(cluster) {
+            const count = cluster.getChildCount();
+            const { size, sizeClass } = getClusterSizeAndClass(count);
+            
+            return L.divIcon({
+                html: `<div>
+                        <span class="area-name">기타</span>
+                        <span class="cluster-count">${count}</span>
+                      </div>`,
+                className: 'custom-cluster custom-cluster-default ' + sizeClass,
+                iconSize: [size, size]
+            });
+        }
+
+        // Function to create polygon style
+        function createPolygonStyle(fillColor, opacity = 0.7) {
+            return {
+                stroke: true,
+                color: 'white',
+                weight: 1,
+                fillColor: fillColor,
+                fillOpacity: opacity,
+                className: 'area-boundary'
+            };
+        }
+
+        // Function to create tree marker
+        function createTreeMarker(feature) {
+            const coords = feature.geometry.coordinates;
+            const latlng = L.latLng(coords[1], coords[0]);
+            const properties = feature.properties;
+            
+            // 디버깅을 위해 속성 로깅
+            console.log("마커 생성 시 속성:", properties);
+            
+            // 기존 코드로 복원
+            const tagNumber = properties.tag_number || properties.tag_id || properties.id || properties.tree_id || 'N/A';
+            
+            const marker = L.marker(latlng, { icon: treeIcon });
+            
+            // Set popup content
+            let popupContent = `
+                <h3>${properties.common_name || 'Tree'}</h3>
+                <p>Species: ${properties.botanical_name || 'Unknown'}</p>
+                <p>Tag #: ${tagNumber}</p>
+                <button onclick="viewTreeDetails('${tagNumber}')">View Details</button>
+            `;
+            marker.bindPopup(popupContent);
+            
+            return { marker, latlng, properties };
+        }
+
+        // Create area polygons
+        let areaPolygons = {};
+        clusterAreas.forEach(area => {
+            areaPolygons[area.name] = L.polygon(
+                area.polygon, 
+                createPolygonStyle(area.style.fillColor)
+            );
+        });
+        
+        let combinedPolygon = L.polygon(
+            combinedArea.polygon, 
+            createPolygonStyle(combinedArea.style.fillColor)
+        );
+
+        // Create cluster groups
+        function createClusters() {
+            // Initialize
+            areaClusters = {};
+            const allMarkers = [];
+            
+            // Create area clusters
+            clusterAreas.forEach(area => {
+                const options = getClusterOptions(500, createAreaClusterIcon(area));
+                options.polygonOptions = {
+                    fillColor: area.style.fillColor,
+                    color: area.style.color,
+                    weight: 3,
+                    opacity: 0.5,
+                    fillOpacity: 0.5
+                };
+                
+                areaClusters[area.name] = L.markerClusterGroup(options);
             });
 
-            // GeoJSON 처리
+            // Create default cluster
+            defaultCluster = L.markerClusterGroup(
+                getClusterOptions(200, createDefaultClusterIcon)
+            );
+
+            // Create markers and add them to the appropriate cluster
             geojson.features.forEach(feature => {
-                const coords = feature.geometry.coordinates;
-                const latlng = L.latLng(coords[1], coords[0]);
-                const properties = feature.properties;
+                const { marker, latlng } = createTreeMarker(feature);
+                allMarkers.push(marker);
                 
-                // 마커 생성
-                const marker = L.marker(latlng, { icon: treeIcon });
-                
-                // 팝업 설정
-                let popupContent = `
-                    <h3>${properties.common_name || 'Tree'}</h3>
-                    <p>Species: ${properties.botanical_name || 'Unknown'}</p>
-                    <p>Tag #: ${properties.tag_number}</p>
-                    <button onclick="viewTreeDetails(${properties.tag_number})">View Details</button>
-                `;
-                marker.bindPopup(popupContent);
-                
-                // 통합 클러스터에 모든 마커 추가
-                combinedCluster.addLayer(marker);
-                
-                // 마커가 속한 영역 확인 (영역별 클러스터용)
+                // Add marker to the appropriate area cluster
                 let added = false;
                 for (const area of clusterAreas) {
-                    const polygon = L.polygon(area.polygon);
-                    if (polygon.getBounds().contains(latlng) && isMarkerInsidePolygon(latlng, area.polygon)) {
+                    if (isMarkerInsidePolygon(latlng, area.polygon)) {
                         areaClusters[area.name].addLayer(marker);
                         added = true;
                         break;
                     }
                 }
                 
-                // 어떤 영역에도 속하지 않는 경우
+                // Add marker to the default cluster if it doesn't belong to any area
                 if (!added) {
-                    if (!defaultCluster) {
-                        defaultCluster = L.markerClusterGroup({
-                            disableClusteringAtZoom: 18,
-                            spiderfyOnMaxZoom: false,
-                            showCoverageOnHover: true,
-                            maxClusterRadius: 200,
-                            iconCreateFunction: function(cluster) {
-                                const count = cluster.getChildCount();
-                                let size = count < 10 ? 40 : (count < 100 ? 50 : 60);
-                                
-                                return L.divIcon({
-                                    html: '<div><span>' + count + '</span></div>',
-                                    className: 'custom-cluster custom-cluster-default',
-                                    iconSize: [size, size]
-                                });
-                            }
-                        });
-                    }
                     defaultCluster.addLayer(marker);
                 }
             });
             
-            // 줌 레벨에 따라 클러스터 표시 방식 결정
-            updateClusterDisplay();
+            // Create combined cluster
+            combinedCluster = L.markerClusterGroup(
+                getClusterOptions(500, createCombinedClusterIcon)
+            );
             
-            // 범례 추가
-            addLegend(geojson.features.length);
-        }
-        
-        // 영역별 클러스터 생성 실행
-        createClusters();
-    }
-    
-    // 중복된 updateClusterDisplay 함수와 이벤트 리스너 제거
-    // 여기서만 정의하고 사용
-    function updateClusterDisplay() {
-        const currentZoom = map.getZoom();
-        console.log("현재 줌 레벨:", currentZoom, "기준 레벨:", ZOOM_THRESHOLD);
-        
-        // 모든 클러스터 레이어 제거
-        if (combinedCluster) {
-            try {
-                map.removeLayer(combinedCluster);
-            } catch (e) {
-                console.log("combinedCluster 레이어 제거 실패:", e);
-            }
-        }
-        
-        for (const areaName in areaClusters) {
-            try {
-                map.removeLayer(areaClusters[areaName]);
-            } catch (e) {
-                console.log(`${areaName} 레이어 제거 실패:`, e);
-            }
-        }
-        
-        if (defaultCluster) {
-            try {
-                map.removeLayer(defaultCluster);
-            } catch (e) {
-                console.log("defaultCluster 레이어 제거 실패:", e);
-            }
-        }
-        
-        // 줌 레벨에 따라 클러스터 표시
-        if (currentZoom <= ZOOM_THRESHOLD) {
-            console.log("통합 클러스터 표시");
-            // 축소 상태: 통합 클러스터 표시
-            map.addLayer(combinedCluster);
-        } else {
-            console.log("영역별 클러스터 표시");
-            // 확대 상태: 영역별 클러스터 표시
+            // Add all markers to the combined cluster
+            allMarkers.forEach(marker => {
+                combinedCluster.addLayer(marker);
+            });
+            
+            // Add all clusters to the map initially
+            combinedCluster.addTo(map);
             for (const areaName in areaClusters) {
-                map.addLayer(areaClusters[areaName]);
+                areaClusters[areaName].addTo(map);
             }
-            if (defaultCluster) map.addLayer(defaultCluster);
+            if (defaultCluster) defaultCluster.addTo(map);
         }
+
+        // Function to update map visibility based on zoom level
+        function updateMapVisibility(zoomLevel) {
+            // Debug log
+            console.log("Updating visibility for zoom level:", zoomLevel);
+            
+            // Zoom level 18 or above: Show markers only
+            if (zoomLevel >= ZOOM_LEVELS.MARKERS_ONLY) {
+                // Hide all area polygons
+                hideLayer(combinedPolygon);
+                hideAllLayers(areaPolygons);
+                
+                // Show individual clusters only
+                hideLayer(combinedCluster);
+                showAllLayers(areaClusters);
+                showLayer(defaultCluster);
+            }
+            // Zoom level 17~18: Show individual areas + clusters
+            else if (zoomLevel >= ZOOM_LEVELS.SEPARATE) {
+                // Show individual areas, hide combined area
+                hideLayer(combinedPolygon);
+                showAllLayers(areaPolygons);
+                
+                // Show individual clusters, hide combined cluster
+                hideLayer(combinedCluster);
+                showAllLayers(areaClusters);
+                showLayer(defaultCluster);
+            } 
+            // Zoom level below 17: Show combined area + clusters
+            else {
+                // Show combined area, hide individual areas
+                showLayer(combinedPolygon);
+                hideAllLayers(areaPolygons);
+                
+                // Show combined cluster, hide individual clusters
+                showLayer(combinedCluster);
+                hideAllLayers(areaClusters);
+                hideLayer(defaultCluster);
+            }
+        }
+        
+        // Function to show/hide layers
+        function showLayer(layer) {
+            if (layer && !map.hasLayer(layer)) {
+                map.addLayer(layer);
+            }
+        }
+        
+        function hideLayer(layer) {
+            if (layer && map.hasLayer(layer)) {
+                map.removeLayer(layer);
+            }
+        }
+        
+        function showAllLayers(layerCollection) {
+            for (const name in layerCollection) {
+                showLayer(layerCollection[name]);
+            }
+        }
+        
+        function hideAllLayers(layerCollection) {
+            for (const name in layerCollection) {
+                hideLayer(layerCollection[name]);
+            }
+        }
+        
+        // Initialize clusters and set up events
+        createClusters();
+        updateMapVisibility(map.getZoom());
+        
+        // Zoom level change event
+        map.on('zoomend', function() {
+            updateMapVisibility(map.getZoom());
+        });
+        
+        // Add legend
+        treeCount = geojson.features.length;
+        addLegend(treeCount);
     }
     
-    // 줌 이벤트 리스너 - 한 번만 등록
-    map.on('zoomend', function() {
-        console.log("zoomend 이벤트 발생");
-        updateClusterDisplay();
-    });
-
-    // 범례 추가 함수
+    // Add legend function
     function addLegend(treeCount) {
         const legend = L.control({ position: 'bottomleft' });
         
@@ -291,9 +403,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h4>Tree Map</h4>
                     <p>Total Trees: <strong>${treeCount}</strong></p>
                     <div class="legend-areas">
-                        <div><span style="background-color: #66BB6A"></span> 서쪽 캠퍼스</div>
-                        <div><span style="background-color: #2196F3"></span> 북쪽 캠퍼스</div>
-                        <div><span style="background-color: #FF5722"></span> 남쪽 캠퍼스</div>
+                        <div><span style="background-color: #1B5E20"></span> West Campus</div>
+                        <div><span style="background-color: #0b6a3c"></span> North Campus</div>
+                        <div><span style="background-color: #006633"></span> South Campus</div>
                     </div>
                 </div>`;
             return div;
@@ -383,7 +495,7 @@ function viewTreeDetails(tagNumber) {
         });
 }
 
-// 다각형 내부에 마커가 있는지 확인하는 함수
+// Function to check if a marker is inside a polygon
 function isMarkerInsidePolygon(latlng, polygonPoints) {
     const polygon = L.polygon(polygonPoints);
     const polyBounds = polygon.getBounds();
@@ -392,8 +504,8 @@ function isMarkerInsidePolygon(latlng, polygonPoints) {
         return false;
     }
     
-    // Ray-casting 알고리즘으로 정확한 내부 판정
-    // 복잡한 다각형에서도 정확하게 내부 여부 판단
+    // Ray-casting algorithm for accurate interior determination
+    // Accurately determines if a point is inside even complex polygons
     let inside = false;
     const x = latlng.lng;
     const y = latlng.lat;
@@ -410,28 +522,3 @@ function isMarkerInsidePolygon(latlng, polygonPoints) {
     
     return inside;
 }
-
-// Fallback function to display sample trees if API loading fails
-function displaySampleTrees() {
-    const sampleTrees = [
-        { id: 1, name: "Oak Tree", lat: 37.31960, lng: -122.04520, species: "Quercus" },
-        { id: 2, name: "Pine Tree", lat: 37.31920, lng: -122.04480, species: "Pinus" },
-        { id: 3, name: "Cherry Tree", lat: 37.31900, lng: -122.04450, species: "Prunus" }
-    ];
-    
-    // Create a marker cluster group for samples
-    const markers = L.markerClusterGroup();
-    
-    sampleTrees.forEach(tree => {
-        const marker = L.marker([tree.lat, tree.lng], { icon: treeIcon });
-        marker.bindPopup(`
-            <h3>${tree.name}</h3>
-            <p>Species: ${tree.species}</p>
-            <p>ID: ${tree.id}</p>
-            <button onclick="viewTreeDetails(${tree.id})">View Details</button>
-        `);
-        markers.addLayer(marker);
-    });
-    
-    map.addLayer(markers);
-} 

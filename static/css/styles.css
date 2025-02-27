@@ -1,3 +1,4 @@
+/* =========== Base Styles =========== */
 * {
     margin: 0;
     padding: 0;
@@ -13,7 +14,7 @@ body {
     min-height: 100vh;
 }
 
-/* 헤더 스타일 */
+/* =========== Header Styles =========== */
 header {
     background-color: #4CAF50;
     color: white;
@@ -49,7 +50,7 @@ nav ul li a:hover {
     color: #e0e0e0;
 }
 
-/* 메인 스타일 */
+/* =========== Main Content =========== */
 main {
     flex: 1;
     padding: 0;
@@ -57,10 +58,10 @@ main {
 
 #map {
     width: 100%;
-    height: calc(100vh - 130px); /* 헤더와 푸터 높이를 제외한 높이 */
+    height: calc(100vh - 130px);
 }
 
-/* 푸터 스타일 */
+/* =========== Footer Styles =========== */
 footer {
     background-color: #333;
     color: white;
@@ -89,7 +90,172 @@ footer {
     text-decoration: underline;
 }
 
-/* 반응형 디자인 */
+/* =========== Map Elements =========== */
+/* Tree Marker Styles */
+.tree-marker {
+    background: transparent;
+    border: none;
+}
+
+.tree-dot {
+    width: 100%;
+    height: 100%;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+}
+
+.leaflet-marker-icon:hover .tree-dot {
+    transform: scale(1.2);
+    background-color: #2E7D32;
+}
+
+/* =========== Cluster Styles =========== */
+/* Base Cluster Styles */
+.custom-cluster {
+    background-color: transparent !important;
+}
+
+.custom-cluster div {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent !important;
+}
+
+/* Cluster Text Styles */
+.custom-cluster .cluster-count {
+    color: white;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.custom-cluster .area-name {
+    color: white;
+    font-size: 10px;
+    text-align: center;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Cluster Size Classes */
+.custom-cluster-small .cluster-count {
+    font-size: 16px;
+}
+
+.custom-cluster-medium .cluster-count {
+    font-size: 24px;
+}
+
+.custom-cluster-large .cluster-count {
+    font-size: 30px;
+}
+
+.custom-cluster-small .area-name {
+    font-size: 10px;
+}
+
+.custom-cluster-medium .area-name {
+    font-size: 15px;
+}
+
+.custom-cluster-large .area-name {
+    font-size: 20px;
+}
+
+/* Cluster Size Scaling */
+.custom-cluster-small {
+    transform: scale(1.1);
+}
+
+.custom-cluster-medium {
+    transform: scale(1.2);
+}
+
+.custom-cluster-large {
+    transform: scale(1.3);
+}
+
+/* Cluster Color Classes */
+.custom-cluster-west {
+    background-color: transparent !important;
+}
+
+.custom-cluster-north {
+    background-color: transparent !important;
+}
+
+.custom-cluster-south {
+    background-color: transparent !important;
+}
+
+.custom-cluster-combined {
+    background-color: transparent !important;
+}
+
+.custom-cluster-default {
+    background-color: transparent !important;
+}
+
+/* =========== Leaflet Overrides =========== */
+/* Cluster Animation & Effects */
+.leaflet-marker-icon-wrapper {
+    opacity: 0.8 !important;
+}
+
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow {
+    transition: transform 0.3s ease-out, opacity 0.3s ease-in;
+}
+
+/* Polygon Styles */
+.custom-cluster-polygon {
+    stroke: #4CAF50;
+    stroke-width: 3;
+    stroke-opacity: 0.5;
+    fill: #8BC34A;
+    fill-opacity: 0.2;
+    transition: fill-opacity 0.2s ease;
+}
+
+.custom-cluster:hover ~ .custom-cluster-polygon {
+    fill-opacity: 0.4;
+    stroke-opacity: 0.8;
+}
+
+.area-boundary {
+    pointer-events: none;
+    z-index: 400;
+}
+
+/* =========== Legend Styles =========== */
+.legend-areas {
+    margin-top: 8px;
+}
+
+.legend-areas div {
+    margin: 3px 0;
+    display: flex;
+    align-items: center;
+}
+
+.legend-areas span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+/* =========== Responsive Styles =========== */
 @media (max-width: 768px) {
     header {
         flex-direction: column;
@@ -113,187 +279,108 @@ footer {
         display: block;
         margin: 0.5rem 0;
     }
+    
+    .custom-cluster .area-name {
+        font-size: 8px;
+    }
 }
 
-/* 마커 클러스터 스타일 */
-.custom-cluster-small {
-    background-color: rgba(100, 191, 103, 0.6);
-}
-.custom-cluster-small div {
-    background-color: rgba(100, 191, 103, 0.8);
-}
-
-.custom-cluster-medium {
-    background-color: rgba(56, 142, 60, 0.6);
-}
-.custom-cluster-medium div {
-    background-color: rgba(56, 142, 60, 0.8);
-}
-
-.custom-cluster-large {
-    background-color: rgba(27, 94, 32, 0.6);
-}
-.custom-cluster-large div {
-    background-color: rgba(27, 94, 32, 0.8);
-}
-
-.custom-cluster {
-    text-align: center;
-    border-radius: 50%;
-    color: white;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: scale(1.2); /* 모든 클러스터 20% 확대 */
-}
-
-.custom-cluster div {
+/* =========== Tree Modal Styles =========== */
+.tree-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
     display: flex;
-    align-items: center;
     justify-content: center;
-    font-size: 16px; /* 기본 14px에서 변경 */
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-/* 크기별 확대 비율 다르게 적용 */
-.custom-cluster-small {
-    transform: scale(1.1);
+.tree-modal.active {
+    opacity: 1;
 }
 
-.custom-cluster-medium {
-    transform: scale(1.2);
+.tree-modal-content {
+    width: 90%;
+    max-width: 500px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
 }
 
-.custom-cluster-large {
-    transform: scale(1.3);
+.tree-modal.active .tree-modal-content {
+    transform: translateY(0);
 }
 
-/* 클러스터 내부 텍스트 크기 조절 */
-.custom-cluster div {
-    font-size: 16px; /* 기본 14px에서 변경 */
-}
-
-/* 클러스터 크기별 텍스트 크기 조절 */
-.custom-cluster-small div {
-    font-size: 14px;
-}
-
-.custom-cluster-medium div {
-    font-size: 16px;
-}
-
-.custom-cluster-large div {
-    font-size: 18px;
-}
-
-/* 클러스터 영역(호버 시 표시되는) 스타일 */
-.leaflet-marker-icon-wrapper {
-    opacity: 0.8 !important;
-}
-
-.leaflet-cluster-anim .leaflet-marker-icon, .leaflet-cluster-anim .leaflet-marker-shadow {
-    transition: transform 0.3s ease-out, opacity 0.3s ease-in;
-}
-
-/* 클러스터 영역 폴리곤 스타일 */
-.custom-cluster-polygon {
-    stroke: #4CAF50;
-    stroke-width: 3;
-    stroke-opacity: 0.5;
-    fill: #8BC34A;
-    fill-opacity: 0.2;
-    transition: fill-opacity 0.2s ease;
-}
-
-/* 호버 시 영역 강조 */
-.custom-cluster:hover ~ .custom-cluster-polygon {
-    fill-opacity: 0.4;
-    stroke-opacity: 0.8;
-}
-
-/* 트리 마커 스타일 */
-.tree-marker {
-    background: transparent;
+.tree-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     border: none;
-}
-
-.tree-dot {
-    width: 100%;
-    height: 100%;
-    background-color: #4CAF50;
+    background: none;
+    font-size: 24px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
-    transition: all 0.2s ease;
-}
-
-/* 마우스 호버 시 약간 강조 효과 */
-.leaflet-marker-icon:hover .tree-dot {
-    transform: scale(1.2);
-    background-color: #2E7D32;
-}
-
-/* 북쪽 지역 클러스터 스타일 */
-.custom-cluster-north {
-    background-color: rgba(33, 150, 243, 0.6);
-}
-.custom-cluster-north div {
-    background-color: rgba(25, 118, 210, 0.8);
-}
-
-/* 남쪽 지역 클러스터 스타일 */
-.custom-cluster-south {
-    background-color: rgba(255, 87, 34, 0.6);
-}
-.custom-cluster-south div {
-    background-color: rgba(230, 74, 25, 0.8);
-}
-
-/* 서쪽 캠퍼스 클러스터 스타일 */
-.custom-cluster-west {
-    background-color: rgba(102, 187, 106, 0.6);
-}
-.custom-cluster-west div {
-    background-color: rgba(56, 142, 60, 0.8);
-}
-
-/* 기본 클러스터 스타일 (영역 외부) */
-.custom-cluster-default {
-    background-color: rgba(158, 158, 158, 0.6);
-}
-.custom-cluster-default div {
-    background-color: rgba(97, 97, 97, 0.8);
-}
-
-/* 범례 영역 스타일 */
-.legend-areas {
-    margin-top: 8px;
-}
-.legend-areas div {
-    margin: 3px 0;
     display: flex;
     align-items: center;
-}
-.legend-areas span {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 5px;
-    display: inline-block;
+    justify-content: center;
+    transition: background-color 0.3s;
 }
 
-/* 영역 경계선 스타일 */
-.area-boundary {
-    pointer-events: none;
-    z-index: 400;
+.tree-modal-close:hover {
+    background-color: #f0f0f0;
 }
 
-/* 통합 클러스터 스타일 */
-.custom-cluster-combined {
-    background-color: rgba(156, 39, 176, 0.6);
+.tree-details h2 {
+    margin-top: 0;
+    color: #2E7D32;
+    margin-bottom: 10px;
 }
-.custom-cluster-combined div {
-    background-color: rgba(123, 31, 162, 0.8);
-} 
+
+.tree-details .botanical-name {
+    color: #555;
+    margin-bottom: 15px;
+}
+
+.tree-attributes {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+.tree-attributes th {
+    text-align: left;
+    padding: 8px;
+    font-weight: bold;
+    width: 40%;
+    border-bottom: 1px solid #eee;
+}
+
+.tree-attributes td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.tree-notes {
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.tree-notes h3 {
+    margin-top: 0;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+}
