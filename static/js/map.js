@@ -1,24 +1,47 @@
-// 파일 상단에 추가
-const TREE_DETAIL_URL = '/api/rest/trees/';
+// 네임스페이스 객체 생성
+window.DeAnzaTreeMap = window.DeAnzaTreeMap || {};
+
+// 상수와 설정을 네임스페이스에 추가
+DeAnzaTreeMap.CONFIG = {
+    API_ENDPOINTS: {
+        TREES_LIST: '/api/rest/trees/',
+        TREE_DETAIL: '/api/rest/trees/'
+    },
+    MAP: {
+        CENTER: [37.31930349325796, -122.04499476044137],
+        DEFAULT_ZOOM: 16,
+        MAX_ZOOM: 20
+    },
+    ZOOM_LEVELS: {
+        COMBINED: 17,     // Below 17: Show combined view
+        SEPARATE: 17,     // 17 and above: Show separate areas
+        MARKERS_ONLY: 18  // 18 and above: Show markers only, no areas
+    }
+};
+
+// 필터 상태와 마커 배열을 네임스페이스에 추가
+DeAnzaTreeMap.filters = {
+    common_name: '',
+    tag_number: '',
+    height_min: '',
+    height_max: '',
+    active: false
+};
+
+// 모든 마커를 저장할 배열을 네임스페이스에 추가
+DeAnzaTreeMap.allTreeMarkers = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize map with lower zoom level
     const map = L.map('map', {
-        maxZoom: 20
-    }).setView([37.31930349325796, -122.04499476044137], 16);
+        maxZoom: DeAnzaTreeMap.CONFIG.MAP.MAX_ZOOM
+    }).setView(DeAnzaTreeMap.CONFIG.MAP.CENTER, DeAnzaTreeMap.CONFIG.MAP.DEFAULT_ZOOM);
     
     // Add OpenStreetMap tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 20
     }).addTo(map);
-    
-    // Zoom levels definition
-    const ZOOM_LEVELS = {
-        COMBINED: 17,     // Below 17: Show combined view
-        SEPARATE: 17,     // 17 and above: Show separate areas
-        MARKERS_ONLY: 18  // 18 and above: Show markers only, no areas
-    };
     
     // Change tree icon to a simple green circle
     const treeIcon = L.divIcon({
@@ -33,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to load tree data from API
     function loadTreesFromAPI() {
         // Change to DRF API URL
-        const apiUrl = '/api/rest/trees/';
+        const apiUrl = DeAnzaTreeMap.CONFIG.API_ENDPOINTS.TREES_LIST;
         // const apiUrl = TREE_DATA_URL;  // Previous URL commented out
         
         fetch(apiUrl)
@@ -49,6 +72,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // const finalData = geojsonData;  // Previous format commented out
                 
                 console.log("API response:", finalData);
+                
+                // 필터 UI 추가 - map 변수를 인자로 전달
+                addFilterControls(finalData, map);
+                
                 displayTreesFromGeoJSON(finalData);
             })
             .catch(error => {
@@ -71,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Common cluster options - remove duplicate code
     function getClusterOptions(radius = 500, customIconFunction) {
         return {
-            disableClusteringAtZoom: ZOOM_LEVELS.MARKERS_ONLY,
+            disableClusteringAtZoom: DeAnzaTreeMap.CONFIG.ZOOM_LEVELS.MARKERS_ONLY,
             spiderfyOnMaxZoom: false,
             showCoverageOnHover: true,
             zoomToBoundsOnClick: true,
@@ -244,11 +271,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>${properties.common_name || 'Tree'}</h3>
                 <p>Species: ${properties.botanical_name || 'Unknown'}</p>
                 <p>Tag #: ${tagNumber}</p>
-                <button onclick="viewTreeDetails('${tagNumber}')">View Details</button>
+                <button onclick="DeAnzaTreeMap.viewTreeDetails('${tagNumber}')">View Details</button>
             `;
             marker.bindPopup(popupContent);
             
-            return { marker, latlng, properties };
+            // 마커 정보를 allTreeMarkers 배열에 저장
+            const markerInfo = { marker, latlng, properties, tagNumber };
+            DeAnzaTreeMap.allTreeMarkers.push(markerInfo);
+            
+            return markerInfo;
         }
 
         // Create area polygons
@@ -292,14 +323,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Create markers and add them to the appropriate cluster
             geojson.features.forEach(feature => {
-                const { marker, latlng } = createTreeMarker(feature);
-                allMarkers.push(marker);
+                const markerInfo = createTreeMarker(feature);
+                allMarkers.push(markerInfo.marker);
                 
                 // Add marker to the appropriate area cluster
                 let added = false;
                 for (const area of clusterAreas) {
-                    if (isMarkerInsidePolygon(latlng, area.polygon)) {
-                        areaClusters[area.name].addLayer(marker);
+                    if (isMarkerInsidePolygon(markerInfo.latlng, area.polygon)) {
+                        areaClusters[area.name].addLayer(markerInfo.marker);
                         added = true;
                         break;
                     }
@@ -307,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Add marker to the default cluster if it doesn't belong to any area
                 if (!added) {
-                    defaultCluster.addLayer(marker);
+                    defaultCluster.addLayer(markerInfo.marker);
                 }
             });
             
@@ -335,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("Updating visibility for zoom level:", zoomLevel);
             
             // Zoom level 18 or above: Show markers only
-            if (zoomLevel >= ZOOM_LEVELS.MARKERS_ONLY) {
+            if (zoomLevel >= DeAnzaTreeMap.CONFIG.ZOOM_LEVELS.MARKERS_ONLY) {
                 // Hide all area polygons
                 hideLayer(combinedPolygon);
                 hideAllLayers(areaPolygons);
@@ -346,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 showLayer(defaultCluster);
             }
             // Zoom level 17~18: Show individual areas + clusters
-            else if (zoomLevel >= ZOOM_LEVELS.SEPARATE) {
+            else if (zoomLevel >= DeAnzaTreeMap.CONFIG.ZOOM_LEVELS.SEPARATE) {
                 // Show individual areas, hide combined area
                 hideLayer(combinedPolygon);
                 showAllLayers(areaPolygons);
@@ -435,11 +466,11 @@ document.addEventListener('DOMContentLoaded', function() {
  * Function to view tree details
  * @param {number} tagNumber - Tree tag number
  */
-function viewTreeDetails(tagNumber) {
+DeAnzaTreeMap.viewTreeDetails = function(tagNumber) {
     console.log("Tree details requested for tag:", tagNumber); // Debug log
     
     // Use DRF API detailed info endpoint
-    fetch(TREE_DETAIL_URL + tagNumber + '/')
+    fetch(DeAnzaTreeMap.CONFIG.API_ENDPOINTS.TREE_DETAIL + tagNumber + '/')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -458,19 +489,19 @@ function viewTreeDetails(tagNumber) {
                 properties.tag_number = treeData.id;
             }
             
-            displayTreeDetails(properties);
+            DeAnzaTreeMap.displayTreeDetails(properties);
         })
         .catch(error => {
             console.error('Error fetching tree details:', error);
             alert(`Error loading details for tree Tag #${tagNumber}`);
         });
-}
+};
 
 /**
  * Function to display tree details modal
  * @param {object} treeData - Tree data object
  */
-function displayTreeDetails(treeData) {
+DeAnzaTreeMap.displayTreeDetails = function(treeData) {
     // If existing modal exists, remove it (prevent duplicates)
     const existingModal = document.querySelector('.tree-modal');
     if (existingModal) {
@@ -549,7 +580,7 @@ function displayTreeDetails(treeData) {
             document.body.removeChild(modal);
         }
     });
-}
+};
 
 // Function to check if a marker is inside a polygon
 function isMarkerInsidePolygon(latlng, polygonPoints) {
@@ -577,4 +608,172 @@ function isMarkerInsidePolygon(latlng, polygonPoints) {
     }
     
     return inside;
+}
+
+// 필터 컨트롤 추가 함수 - map 매개변수 추가
+function addFilterControls(geojsonData, map) {
+    // 고유한 나무 종류(common_name) 목록 추출
+    const treeSpecies = [...new Set(
+        geojsonData.features
+            .map(feature => feature.properties.common_name)
+            .filter(name => name) // null/undefined 제거
+    )].sort();
+    
+    // 필터 컨트롤 생성
+    const filterControl = L.control({ position: 'topright' });
+    
+    filterControl.onAdd = function(map) {
+        const div = L.DomUtil.create('div', 'filter-control');
+        div.innerHTML = `
+            <div class="filter-panel">
+                <h3>Filter</h3>
+                <div class="filter-form">
+                    <div class="filter-group">
+                        <label for="species-filter">Tree Species:</label>
+                        <select id="species-filter">
+                            <option value="">All Species</option>
+                            ${treeSpecies.map(species => 
+                                `<option value="${species}">${species}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="tag-filter">Tag Number:</label>
+                        <input type="text" id="tag-filter" placeholder="e.g. 1234">
+                    </div>
+                    <div class="filter-group">
+                        <label>Height Range:</label>
+                        <div class="range-inputs">
+                            <input type="text" id="height-min" placeholder="Min" size="5">
+                            <span>~</span>
+                            <input type="text" id="height-max" placeholder="Max" size="5">
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="apply-filter">Apply</button>
+                        <button id="reset-filter">Reset</button>
+                    </div>
+                </div>
+                <button class="filter-toggle">Filter ▼</button>
+            </div>
+        `;
+        
+        // 이벤트 버블링 방지 (지도 드래그 방지)
+        L.DomEvent.disableClickPropagation(div);
+        L.DomEvent.disableScrollPropagation(div);
+        
+        return div;
+    };
+    
+    filterControl.addTo(map);
+    
+    // 필터 패널 토글 기능
+    setTimeout(() => {
+        const filterToggle = document.querySelector('.filter-toggle');
+        const filterPanel = document.querySelector('.filter-panel');
+        
+        filterToggle.addEventListener('click', function() {
+            filterPanel.classList.toggle('expanded');
+            this.textContent = filterPanel.classList.contains('expanded') ? 'Filter ▲' : 'Filter ▼';
+        });
+        
+        // 필터 적용 버튼 이벤트
+        document.getElementById('apply-filter').addEventListener('click', function() {
+            DeAnzaTreeMap.filters.common_name = document.getElementById('species-filter').value;
+            DeAnzaTreeMap.filters.tag_number = document.getElementById('tag-filter').value;
+            DeAnzaTreeMap.filters.height_min = document.getElementById('height-min').value;
+            DeAnzaTreeMap.filters.height_max = document.getElementById('height-max').value;
+            DeAnzaTreeMap.filters.active = true;
+            
+            applyFilters();
+        });
+        
+        // 필터 초기화 버튼 이벤트
+        document.getElementById('reset-filter').addEventListener('click', function() {
+            document.getElementById('species-filter').value = '';
+            document.getElementById('tag-filter').value = '';
+            document.getElementById('height-min').value = '';
+            document.getElementById('height-max').value = '';
+            
+            DeAnzaTreeMap.filters.common_name = '';
+            DeAnzaTreeMap.filters.tag_number = '';
+            DeAnzaTreeMap.filters.height_min = '';
+            DeAnzaTreeMap.filters.height_max = '';
+            DeAnzaTreeMap.filters.active = false;
+            
+            applyFilters();
+        });
+    }, 100);
+}
+
+// 필터 적용 함수
+function applyFilters() {
+    // 모든 마커 숨기기
+    DeAnzaTreeMap.allTreeMarkers.forEach(markerInfo => {
+        markerInfo.marker.setOpacity(0);
+    });
+    
+    // 필터 조건에 맞는 마커만 표시
+    const filteredMarkers = DeAnzaTreeMap.allTreeMarkers.filter(markerInfo => {
+        if (!DeAnzaTreeMap.filters.active) return true;
+        
+        const props = markerInfo.properties;
+        const tagNumber = markerInfo.tagNumber;
+        
+        // 나무 종류 필터
+        if (DeAnzaTreeMap.filters.common_name && 
+            props.common_name !== DeAnzaTreeMap.filters.common_name) {
+            return false;
+        }
+        
+        // Tag 번호 필터
+        if (DeAnzaTreeMap.filters.tag_number && 
+            !tagNumber.toString().includes(DeAnzaTreeMap.filters.tag_number)) {
+            return false;
+        }
+        
+        // 높이 필터 (숫자만 추출하여 비교)
+        if (props.height) {
+            const heightNum = parseFloat(props.height.replace(/[^\d.]/g, ''));
+            
+            if (DeAnzaTreeMap.filters.height_min && 
+                heightNum < parseFloat(DeAnzaTreeMap.filters.height_min)) {
+                return false;
+            }
+            
+            if (DeAnzaTreeMap.filters.height_max && 
+                heightNum > parseFloat(DeAnzaTreeMap.filters.height_max)) {
+                return false;
+            }
+        } else if (DeAnzaTreeMap.filters.height_min || DeAnzaTreeMap.filters.height_max) {
+            // 높이 정보가 없는데 높이 필터가 설정된 경우
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // 필터링된 마커 표시
+    filteredMarkers.forEach(markerInfo => {
+        markerInfo.marker.setOpacity(1);
+    });
+    
+    // 필터 결과 카운트 업데이트
+    updateFilterCount(filteredMarkers.length, DeAnzaTreeMap.allTreeMarkers.length);
+}
+
+// 필터 결과 카운트 업데이트 함수
+function updateFilterCount(filteredCount, totalCount) {
+    const filterCountElement = document.getElementById('filter-count');
+    if (!filterCountElement) {
+        const countDiv = document.createElement('div');
+        countDiv.id = 'filter-count';
+        countDiv.className = 'filter-count';
+        document.querySelector('.filter-panel').appendChild(countDiv);
+    }
+    
+    document.getElementById('filter-count').innerHTML = 
+        DeAnzaTreeMap.filters.active 
+            ? `<span>${filteredCount}/${totalCount} trees shown</span>` 
+            : '';
 }
