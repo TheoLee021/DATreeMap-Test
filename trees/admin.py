@@ -7,19 +7,23 @@ class TreeAdmin(GISModelAdmin):
     list_display = (
         'tag_number', 
         'common_name', 
-        'botanical_name', 
+        'botanical_name',
+        'height',
+        'diameter',
         'health', 
         'last_update',
         )
     list_filter = (
         'common_name', 
-        'health', 
+        'height',
+        'diameter',
+        'health',
         'last_update',
         )
     search_fields = (
         'tag_number', 
         'common_name', 
-        'botanical_name', 
+        'botanical_name',
         'notes',
         )
     
