@@ -1,3 +1,6 @@
+// 파일 상단에 추가
+const TREE_DETAIL_URL = '/api/rest/trees/';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize map with lower zoom level
     const map = L.map('map', {
@@ -429,10 +432,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Function to view tree details
+/**
+ * Function to view tree details
+ * @param {number} tagNumber - Tree tag number
+ */
 function viewTreeDetails(tagNumber) {
-    console.log(`Viewing details for tree Tag #${tagNumber}`);
+    console.log("Tree details requested for tag:", tagNumber); // 디버깅 로그
     
+    // DRF API 상세 정보 엔드포인트 사용
     fetch(TREE_DETAIL_URL + tagNumber + '/')
         .then(response => {
             if (!response.ok) {
@@ -441,72 +448,108 @@ function viewTreeDetails(tagNumber) {
             return response.json();
         })
         .then(treeData => {
-            // Create detailed information string
-            let detailsHtml = '<div style="max-height: 300px; overflow-y: auto;">';
-            detailsHtml += `<h2>${treeData.common_name}</h2>`;
-            detailsHtml += `<p><strong>Botanical Name:</strong> ${treeData.botanical_name || 'N/A'}</p>`;
-            detailsHtml += `<p><strong>Tag #:</strong> ${treeData.tag_number}</p>`;
-            detailsHtml += `<p><strong>Health:</strong> ${treeData.health || 'N/A'}</p>`;
-            detailsHtml += `<p><strong>Diameter:</strong> ${treeData.diameter || 'N/A'}</p>`;
-            detailsHtml += `<p><strong>Height:</strong> ${treeData.height || 'N/A'}</p>`;
+            console.log("Tree data received:", treeData); // 응답 로깅
             
-            if (treeData.crown_height) {
-                detailsHtml += `<p><strong>Crown Height:</strong> ${treeData.crown_height}</p>`;
+            // id가 tag_number이므로 feature.id도 확인
+            const properties = treeData.properties || treeData;
+            const tagNumber = treeData.id || properties.tag_number;
+            
+            // id를 tag_number로 추가
+            if (!properties.tag_number && treeData.id) {
+                properties.tag_number = treeData.id;
             }
-            if (treeData.crown_spread) {
-                detailsHtml += `<p><strong>Crown Spread:</strong> ${treeData.crown_spread}</p>`;
-            }
-            if (treeData.last_update) {
-                detailsHtml += `<p><strong>Last Updated:</strong> ${treeData.last_update}</p>`;
-            }
-            if (treeData.notes) {
-                detailsHtml += `<p><strong>Notes:</strong> ${treeData.notes}</p>`;
-            }
-            detailsHtml += '</div>';
             
-            // Create a modal or use alert for simplicity
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.7)';
-            modal.style.zIndex = '1000';
-            modal.style.display = 'flex';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-            
-            const modalContent = document.createElement('div');
-            modalContent.style.width = '60%';
-            modalContent.style.maxWidth = '500px';
-            modalContent.style.backgroundColor = 'white';
-            modalContent.style.padding = '20px';
-            modalContent.style.borderRadius = '5px';
-            modalContent.style.position = 'relative';
-            
-            const closeButton = document.createElement('button');
-            closeButton.innerText = 'X';
-            closeButton.style.position = 'absolute';
-            closeButton.style.top = '10px';
-            closeButton.style.right = '10px';
-            closeButton.style.border = 'none';
-            closeButton.style.background = 'none';
-            closeButton.style.fontSize = '20px';
-            closeButton.style.cursor = 'pointer';
-            closeButton.onclick = function() {
-                document.body.removeChild(modal);
-            };
-            
-            modalContent.innerHTML = detailsHtml;
-            modalContent.appendChild(closeButton);
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
+            displayTreeDetails(properties);
         })
         .catch(error => {
             console.error('Error fetching tree details:', error);
             alert(`Error loading details for tree Tag #${tagNumber}`);
         });
+}
+
+/**
+ * Function to display tree details modal
+ * @param {object} treeData - Tree data object
+ */
+function displayTreeDetails(treeData) {
+    // 기존 모달이 있으면 제거 (중복 방지)
+    const existingModal = document.querySelector('.tree-modal');
+    if (existingModal) {
+        document.body.removeChild(existingModal);
+    }
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.className = 'tree-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-labelledby', 'tree-modal-title');
+    
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'tree-modal-content';
+    
+    // Create close button
+    const closeButton = document.createElement('button');
+    closeButton.className = 'tree-modal-close';
+    closeButton.innerHTML = '&times;';
+    closeButton.setAttribute('aria-label', 'Close dialog');
+    closeButton.onclick = function() {
+        document.body.removeChild(modal);
+    };
+    
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && document.body.contains(modal)) {
+            document.body.removeChild(modal);
+        }
+    });
+    
+    // Generate tree info HTML
+    let detailsHtml = '<div class="tree-details">';
+    detailsHtml += `<h2 id="tree-modal-title">${treeData.common_name || 'Unknown Tree'}</h2>`;
+    
+    if (treeData.botanical_name) {
+        detailsHtml += `<p class="botanical-name"><em>${treeData.botanical_name}</em></p>`;
+    }
+    
+    // Create tree attributes table
+    detailsHtml += '<table class="tree-attributes">';
+    detailsHtml += `<tr><th>Tag #:</th><td>${treeData.tag_number}</td></tr>`;
+    
+    if (treeData.height) {
+        detailsHtml += `<tr><th>Height:</th><td>${treeData.height}</td></tr>`;
+    }
+    if (treeData.diameter) {
+        detailsHtml += `<tr><th>Diameter:</th><td>${treeData.diameter}</td></tr>`;
+    }
+    if (treeData.crown_spread) {
+        detailsHtml += `<tr><th>Crown Spread:</th><td>${treeData.crown_spread}</td></tr>`;
+    }
+    if (treeData.last_update) {
+        detailsHtml += `<tr><th>Last Updated:</th><td>${treeData.last_update}</td></tr>`;
+    }
+    detailsHtml += '</table>';
+    
+    if (treeData.notes) {
+        detailsHtml += `<div class="tree-notes"><h3>Expert's Notes:</h3><p>${treeData.notes}</p></div>`;
+    }
+    
+    detailsHtml += '</div>';
+    
+    // Add content to modal
+    modalContent.innerHTML = detailsHtml;
+    modalContent.appendChild(closeButton);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Open modal animation
+    setTimeout(() => modal.classList.add('active'), 10);
+    
+    // Close modal on outside click
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
 }
 
 // Function to check if a marker is inside a polygon
