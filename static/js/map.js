@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             {
-                name: "North Campus",
+                name: "East Campus",
                 polygon: [
                     [37.318, -122.045215],
                     [37.322753, -122.045215], 
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     [37.318, -122.04157]
                 ],
                 style: {
-                    className: 'custom-cluster custom-cluster-north',
+                    className: 'custom-cluster custom-cluster-east',
                     color: '#0b6a3c',
                     fillColor: '#0b6a3c'
                 }
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>Total Trees: <strong>${treeCount}</strong></p>
                     <div class="legend-areas">
                         <div><span style="background-color: #1B5E20"></span> West Campus</div>
-                        <div><span style="background-color: #0b6a3c"></span> North Campus</div>
+                        <div><span style="background-color: #0b6a3c"></span> East Campus</div>
                         <div><span style="background-color: #006633"></span> South Campus</div>
                     </div>
                 </div>`;
