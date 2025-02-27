@@ -32,9 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to load tree data from API
     function loadTreesFromAPI() {
-        // DRF API URL로 변경
+        // Change to DRF API URL
         const apiUrl = '/api/rest/trees/';
-        // const apiUrl = TREE_DATA_URL;  // 기존 URL 주석 처리
+        // const apiUrl = TREE_DATA_URL;  // Previous URL commented out
         
         fetch(apiUrl)
             .then(response => {
@@ -44,22 +44,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(geojsonData => {
-                // DRF API는 다른 형식으로 응답할 수 있음
+                // DRF API may respond with a different format
                 const finalData = apiUrl.includes('/rest/') ? processDrfResponse(geojsonData) : geojsonData;
-                // const finalData = geojsonData;  // 기존 형식 주석 처리
+                // const finalData = geojsonData;  // Previous format commented out
                 
-                console.log("API 응답:", finalData);
+                console.log("API response:", finalData);
                 displayTreesFromGeoJSON(finalData);
             })
             .catch(error => {
                 console.error('Error loading API data:', error);
-                // 오류 처리
+                // Error handling
             });
     }
     
-    // DRF 응답 처리 헬퍼 함수 (나중에 사용)
+    // DRF response processing helper function (to be used later)
     function processDrfResponse(response) {
-        // 페이지네이션이 없으므로 응답을 그대로 반환
         return response;
     }
     
@@ -232,10 +231,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const latlng = L.latLng(coords[1], coords[0]);
             const properties = feature.properties;
             
-            // 디버깅을 위해 속성 로깅 및 Feature ID 확인
-            console.log("마커 생성 시 속성:", properties, "Feature ID:", feature.id);
+            // Debug logging for properties and Feature ID
+            console.log("Marker creation properties:", properties, "Feature ID:", feature.id);
             
-            // feature.id를 tag_number로 사용 (중요!)
+            // Use feature.id as tag_number (important!)
             const tagNumber = feature.id || 'N/A';
             
             const marker = L.marker(latlng, { icon: treeIcon });
@@ -437,9 +436,9 @@ document.addEventListener('DOMContentLoaded', function() {
  * @param {number} tagNumber - Tree tag number
  */
 function viewTreeDetails(tagNumber) {
-    console.log("Tree details requested for tag:", tagNumber); // 디버깅 로그
+    console.log("Tree details requested for tag:", tagNumber); // Debug log
     
-    // DRF API 상세 정보 엔드포인트 사용
+    // Use DRF API detailed info endpoint
     fetch(TREE_DETAIL_URL + tagNumber + '/')
         .then(response => {
             if (!response.ok) {
@@ -448,13 +447,13 @@ function viewTreeDetails(tagNumber) {
             return response.json();
         })
         .then(treeData => {
-            console.log("Tree data received:", treeData); // 응답 로깅
+            console.log("Tree data received:", treeData); // Debug log
             
-            // id가 tag_number이므로 feature.id도 확인
+            // Since id is tag_number, check feature.id as well
             const properties = treeData.properties || treeData;
             const tagNumber = treeData.id || properties.tag_number;
             
-            // id를 tag_number로 추가
+            // Add tag_number if it doesn't exist
             if (!properties.tag_number && treeData.id) {
                 properties.tag_number = treeData.id;
             }
@@ -472,7 +471,7 @@ function viewTreeDetails(tagNumber) {
  * @param {object} treeData - Tree data object
  */
 function displayTreeDetails(treeData) {
-    // 기존 모달이 있으면 제거 (중복 방지)
+    // If existing modal exists, remove it (prevent duplicates)
     const existingModal = document.querySelector('.tree-modal');
     if (existingModal) {
         document.body.removeChild(existingModal);
