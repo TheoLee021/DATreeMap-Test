@@ -1,7 +1,7 @@
-// 네임스페이스 객체 생성
+// Create namespace object
 window.DeAnzaTreeMap = window.DeAnzaTreeMap || {};
 
-// 상수와 설정을 네임스페이스에 추가
+// Add constants and settings to the namespace
 DeAnzaTreeMap.CONFIG = {
     API_ENDPOINTS: {
         TREES_LIST: '/api/rest/trees/',
@@ -19,7 +19,7 @@ DeAnzaTreeMap.CONFIG = {
     }
 };
 
-// 필터 상태와 마커 배열을 네임스페이스에 추가
+// Add filter state and marker array to the namespace
 DeAnzaTreeMap.filters = {
     common_name: '',
     tag_number: '',
@@ -28,7 +28,7 @@ DeAnzaTreeMap.filters = {
     active: false
 };
 
-// 모든 마커를 저장할 배열을 네임스페이스에 추가
+// Add array to store all markers to the namespace
 DeAnzaTreeMap.allTreeMarkers = [];
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -610,16 +610,16 @@ function isMarkerInsidePolygon(latlng, polygonPoints) {
     return inside;
 }
 
-// 필터 컨트롤 추가 함수 - map 매개변수 추가
+// Function to add filter controls - added map parameter
 function addFilterControls(geojsonData, map) {
-    // 고유한 나무 종류(common_name) 목록 추출
+    // Extract unique tree species (common_name) list
     const treeSpecies = [...new Set(
         geojsonData.features
             .map(feature => feature.properties.common_name)
-            .filter(name => name) // null/undefined 제거
+            .filter(name => name) // remove null/undefined
     )].sort();
     
-    // 필터 컨트롤 생성
+    // Create filter control
     const filterControl = L.control({ position: 'topright' });
     
     filterControl.onAdd = function(map) {
@@ -658,7 +658,7 @@ function addFilterControls(geojsonData, map) {
             </div>
         `;
         
-        // 이벤트 버블링 방지 (지도 드래그 방지)
+        // Prevent event bubbling (prevent map dragging)
         L.DomEvent.disableClickPropagation(div);
         L.DomEvent.disableScrollPropagation(div);
         
@@ -667,7 +667,7 @@ function addFilterControls(geojsonData, map) {
     
     filterControl.addTo(map);
     
-    // 필터 패널 토글 기능
+    // Filter panel toggle functionality
     setTimeout(() => {
         const filterToggle = document.querySelector('.filter-toggle');
         const filterPanel = document.querySelector('.filter-panel');
@@ -677,7 +677,7 @@ function addFilterControls(geojsonData, map) {
             this.textContent = filterPanel.classList.contains('expanded') ? 'Filter ▲' : 'Filter ▼';
         });
         
-        // 필터 적용 버튼 이벤트
+        // Apply filter button event
         document.getElementById('apply-filter').addEventListener('click', function() {
             DeAnzaTreeMap.filters.common_name = document.getElementById('species-filter').value;
             DeAnzaTreeMap.filters.tag_number = document.getElementById('tag-filter').value;
@@ -688,7 +688,7 @@ function addFilterControls(geojsonData, map) {
             applyFilters();
         });
         
-        // 필터 초기화 버튼 이벤트
+        // Reset filter button event
         document.getElementById('reset-filter').addEventListener('click', function() {
             document.getElementById('species-filter').value = '';
             document.getElementById('tag-filter').value = '';
@@ -706,33 +706,33 @@ function addFilterControls(geojsonData, map) {
     }, 100);
 }
 
-// 필터 적용 함수
+// Apply filter function
 function applyFilters() {
-    // 모든 마커 숨기기
+    // Hide all markers
     DeAnzaTreeMap.allTreeMarkers.forEach(markerInfo => {
         markerInfo.marker.setOpacity(0);
     });
     
-    // 필터 조건에 맞는 마커만 표시
+    // Show markers that match filter conditions
     const filteredMarkers = DeAnzaTreeMap.allTreeMarkers.filter(markerInfo => {
         if (!DeAnzaTreeMap.filters.active) return true;
         
         const props = markerInfo.properties;
         const tagNumber = markerInfo.tagNumber;
         
-        // 나무 종류 필터
+        // Tree species filter
         if (DeAnzaTreeMap.filters.common_name && 
             props.common_name !== DeAnzaTreeMap.filters.common_name) {
             return false;
         }
         
-        // Tag 번호 필터
+        // Tag number filter
         if (DeAnzaTreeMap.filters.tag_number && 
             !tagNumber.toString().includes(DeAnzaTreeMap.filters.tag_number)) {
             return false;
         }
         
-        // 높이 필터 (숫자만 추출하여 비교)
+        // Height filter (extract numeric value for comparison)
         if (props.height) {
             const heightNum = parseFloat(props.height.replace(/[^\d.]/g, ''));
             
@@ -746,23 +746,23 @@ function applyFilters() {
                 return false;
             }
         } else if (DeAnzaTreeMap.filters.height_min || DeAnzaTreeMap.filters.height_max) {
-            // 높이 정보가 없는데 높이 필터가 설정된 경우
+            // No height info but height filter is set
             return false;
         }
         
         return true;
     });
     
-    // 필터링된 마커 표시
+    // Show filtered markers
     filteredMarkers.forEach(markerInfo => {
         markerInfo.marker.setOpacity(1);
     });
     
-    // 필터 결과 카운트 업데이트
+    // Update filter result count
     updateFilterCount(filteredMarkers.length, DeAnzaTreeMap.allTreeMarkers.length);
 }
 
-// 필터 결과 카운트 업데이트 함수
+// Update filter result count function
 function updateFilterCount(filteredCount, totalCount) {
     const filterCountElement = document.getElementById('filter-count');
     if (!filterCountElement) {
