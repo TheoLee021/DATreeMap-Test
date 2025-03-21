@@ -26,7 +26,20 @@ SECRET_KEY = 'django-insecure-)0p7o#5483$=)--nb(=mr(jh05_5p_p^mv#xe@%bm_+ohz=f=4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# 데이터베이스 설정을 환경 변수에서 가져옴
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': os.environ.get('DB_NAME', 'datreemap'),
+        'USER': os.environ.get('DB_USER', 'theo'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+    }
+}
+
+# ALLOWED_HOSTS 설정
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1').split(' ')
 
 
 # Application definition
@@ -85,21 +98,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'datreemap',
-        'USER': 'theo',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -148,11 +146,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Auth
 AUTH_USER_MODEL = 'users.User'
 
-# GDAL 라이브러리 경로 설정
-GDAL_LIBRARY_PATH = '/opt/homebrew/lib/libgdal.dylib'
-
-# GEOS 라이브러리 경로 설정 (필요할 수 있음)
-GEOS_LIBRARY_PATH = '/opt/homebrew/lib/libgeos_c.dylib'
+# GDAL 및 GEOS 라이브러리 경로 (Docker 환경에서는 다를 수 있음)
+if os.environ.get('IN_DOCKER', False):
+    # Docker 내부에서는 시스템 라이브러리 사용
+    GDAL_LIBRARY_PATH = None
+    GEOS_LIBRARY_PATH = None
+else:
+    # 로컬 개발 환경에서는 기존 설정 유지
+    GDAL_LIBRARY_PATH = '/opt/homebrew/lib/libgdal.dylib'
+    GEOS_LIBRARY_PATH = '/opt/homebrew/lib/libgeos_c.dylib'
 
 # REST Framework 설정 (settings.py 맨 아래에 추가)
 REST_FRAMEWORK = {

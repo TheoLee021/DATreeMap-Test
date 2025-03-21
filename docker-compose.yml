@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Django 웹 애플리케이션
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DB_NAME=datreemap
+      - DB_USER=treemapuser
+      - DB_PASSWORD=treemappassword
+      - DB_HOST=db
+      - DB_PORT=5432
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  # PostgreSQL/PostGIS 데이터베이스
+  db:
+    image: postgis/postgis:15-3.4
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=datreemap
+      - POSTGRES_USER=treemapuser
+      - POSTGRES_PASSWORD=treemappassword
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data: 
