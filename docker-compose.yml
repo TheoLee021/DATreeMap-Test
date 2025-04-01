@@ -3,7 +3,10 @@ version: '3.8'
 services:
   # Django 웹 애플리케이션
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    platform: linux/arm64/v8  # M1/M2 Mac용
     volumes:
       - .:/app
     ports:
@@ -22,7 +25,8 @@ services:
 
   # PostgreSQL/PostGIS 데이터베이스
   db:
-    image: postgis/postgis:15-3.4
+    image: postgres:15
+    platform: linux/arm64/v8  # M1/M2 Mac용
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
