@@ -60,6 +60,43 @@ The project consists of the following main apps:
    # Edit the .env file if needed
    ```
 
+   The `.env` file should contain the following variables:
+   ```
+   # Django settings
+   DJANGO_SECRET_KEY=django-insecure-your-secret-key-here
+   DEBUG=1  # Set to 0 for production
+
+   # Database settings
+   DB_NAME=datreemap
+   DB_USER=datreemap
+   DB_PASSWORD=datreemap
+   DB_HOST=db
+   DB_PORT=5432
+
+   # GDAL/GEOS settings
+   GDAL_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgdal.so
+   GEOS_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgeos_c.so
+
+   # Other settings
+   ALLOWED_HOSTS=localhost 127.0.0.1
+   IN_DOCKER=True
+   ```
+
+   Key considerations when editing the `.env` file:
+   - For security, change the `DJANGO_SECRET_KEY` to a unique, random string in production
+   - Set `DEBUG=0` in production environments
+   - **Database security**:
+     - Use strong, unique passwords for database users
+     - Consider using environment-specific database credentials
+     - In production, create a database user with limited permissions
+     - Never use 'root' or default passwords in production
+     - Consider using database connection pooling for production
+   - Adjust database credentials as needed
+   - For different architectures, update the GDAL/GEOS paths:
+     - ARM64 (M1/M2 Mac): use `/usr/lib/aarch64-linux-gnu/libgdal.so`
+     - Intel/AMD64: use `/usr/lib/libgdal.so` 
+   - Update `ALLOWED_HOSTS` to include your domain in production
+
 3. Update Poetry dependencies (if needed):
    ```bash
    poetry lock
@@ -284,10 +321,12 @@ python manage.py test
 
 ## License
 
-[Add License Information]
+MIT License
+
+Copyright (c) 2025 [Environmental Monitoring Society]
 
 ---
 
 This project is a web application utilizing Geographic Information Systems to visualize and manage tree data across the De Anza campus. 
 
-For detailed Docker setup guide, see [DOCKER_SETUP.md](DOCKER_SETUP.md). 
+For detailed Docker setup guide, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
