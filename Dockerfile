@@ -1,5 +1,5 @@
-# 기본 이미지로 Python 사용
-FROM python:3.12-slim
+# 공통 베이스 이미지
+FROM python:3.12-slim AS base
 
 # 환경 변수 설정
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -21,21 +21,32 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# GDAL 환경 변수 설정
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+ENV LIBRARY_PATH=/usr/lib/aarch64-linux-gnu
+ENV LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu
+ENV GDAL_DATA=/usr/share/gdal
+ENV GDAL_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgdal.so
+ENV GEOS_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgeos_c.so
+
 # Python 의존성 파일 복사 및 설치
-COPY pyproject.toml .
+COPY pyproject.toml poetry.lock ./
 RUN pip install --upgrade pip \
     && pip install poetry \
-    && poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --no-root
+    && poetry config virtualenvs.create false
 
-# 프로젝트 파일 복사
+# 개발 환경
+FROM base AS development
+RUN poetry install --no-interaction --no-ansi --no-root
 COPY . .
-
-# Django 설정 환경 변수
-ENV DJANGO_SETTINGS_MODULE=config.settings
-
-# 포트 노출
 EXPOSE 8000
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
-# 시작 스크립트 실행
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"] 
+# 프로덕션 환경
+FROM base AS production
+RUN poetry install --no-dev --no-interaction --no-ansi --no-root
+COPY . .
+RUN python manage.py collectstatic --noinput
+EXPOSE 8000
+CMD ["sh", "start.sh"] 
