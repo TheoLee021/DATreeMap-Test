@@ -2,26 +2,6 @@
 
 A web application for visualizing and managing tree data on the De Anza campus. Built with Django and PostGIS, this application provides an interactive map interface to explore trees on campus.
 
-## 목차
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Installation and Setup](#installation-and-setup)
-  - [Using Docker (Recommended)](#using-docker-recommended)
-  - [Local Development Setup](#local-development-setup)
-- [Importing Tree Data](#importing-tree-data)
-- [API Endpoints](#api-endpoints)
-- [Development and Production Environments](#development-and-production-environments)
-- [Custom User Model](#custom-user-model)
-- [Environment Variables](#environment-variables)
-- [Troubleshooting](#troubleshooting)
-- [Production Deployment Considerations](#production-deployment-considerations)
-- [Running Tests](#running-tests)
-- [Contributing](#contributing)
-- [License](#license)
-
-<<<<<<< Updated upstream
-=======
 ## Table of Contents
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -40,7 +20,6 @@ A web application for visualizing and managing tree data on the De Anza campus. 
 - [Contributing](#contributing)
 - [License](#license)
 
->>>>>>> Stashed changes
 ## Features
 
 - Interactive map visualization of tree data
