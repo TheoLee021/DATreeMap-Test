@@ -142,4 +142,4 @@ python manage.py test
 
 ---
 
-This project is an educational web application utilizing Geographic Information Systems to visualize and manage tree data across the De Anza campus. 
+This project is a web application utilizing Geographic Information Systems to visualize and manage tree data across the De Anza campus. 
