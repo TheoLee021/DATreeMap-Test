@@ -2,6 +2,24 @@
 
 A web application for visualizing and managing tree data on the De Anza campus. Built with Django and PostGIS, this application provides an interactive map interface to explore trees on campus.
 
+## 목차
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Installation and Setup](#installation-and-setup)
+  - [Using Docker (Recommended)](#using-docker-recommended)
+  - [Local Development Setup](#local-development-setup)
+- [Importing Tree Data](#importing-tree-data)
+- [API Endpoints](#api-endpoints)
+- [Development and Production Environments](#development-and-production-environments)
+- [Custom User Model](#custom-user-model)
+- [Environment Variables](#environment-variables)
+- [Troubleshooting](#troubleshooting)
+- [Production Deployment Considerations](#production-deployment-considerations)
+- [Running Tests](#running-tests)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Features
 
 - Interactive map visualization of tree data
@@ -17,13 +35,37 @@ A web application for visualizing and managing tree data on the De Anza campus. 
 - **API**: Django REST Framework
 - **Frontend**: JavaScript, Leaflet.js (map library)
 - **Deployment**: Docker, Docker Compose
+- **Dependency Management**: Poetry
 
 ## Project Structure
 
-The project consists of the following main apps:
+The project consists of the following main apps and files:
 
-- **trees**: Models and views for tree data management
-- **users**: Custom user account and profile management
+```
+DATreeMap-test/
+├── config/                 # Django 프로젝트 설정
+│   ├── settings.py         # 프로젝트 설정 파일
+│   ├── urls.py             # URL 라우팅
+│   └── wsgi.py             # WSGI 설정
+├── trees/                  # 나무 데이터 앱
+│   ├── management/         # Django 관리 명령어
+│   │   └── commands/       # 커스텀 명령어
+│   │       ├── import_trees.py  # 나무 데이터 가져오기
+│   │       └── wait_for_db.py   # DB 연결 대기
+│   │   ├── models.py           # 데이터 모델
+│   │   ├── views.py            # 뷰 함수
+│   │   └── urls.py             # URL 라우팅
+├── users/                  # 사용자 관리 앱
+├── static/                 # 정적 파일
+├── templates/              # HTML 템플릿
+├── Dockerfile              # Docker 이미지 설정
+├── docker-compose.yml      # Docker 서비스 구성
+├── docker-compose.prod.yml # 프로덕션 환경 Docker 구성
+├── pyproject.toml          # Python 의존성 관리
+├── poetry.lock             # Poetry 의존성 잠금 파일
+├── start.sh                # 시작 스크립트
+└── .env                    # 환경 변수 설정
+```
 
 ## Installation and Setup
 
@@ -35,14 +77,38 @@ The project consists of the following main apps:
    cd [repository-folder]
    ```
 
-2. Start services using Docker Compose:
+2. Create and configure the `.env` file:
+   ```bash
+   cp .env.example .env
+   # Edit the .env file if needed
+   ```
+
+3. Update Poetry dependencies (if needed):
+   ```bash
+   poetry lock
+   ```
+
+4. Start services using Docker Compose:
    ```bash
    docker-compose up --build
    ```
 
-3. Access the application in your web browser:
+5. Initialize the database:
+   ```bash
+   # In a new terminal
+   docker-compose exec web python manage.py migrate
+   docker-compose exec web python manage.py import_trees "Tree Dataset_De Anza College_Backup.csv"
+   docker-compose exec web python manage.py createsuperuser
+   ```
+
+6. Access the application in your web browser:
    ```
    http://localhost:8000
+   ```
+   
+   Admin interface:
+   ```
+   http://localhost:8000/admin
    ```
 
 ### Local Development Setup
@@ -61,18 +127,29 @@ The project consists of the following main apps:
 3. Configure database settings:
    ```bash
    export DB_NAME=datreemap
-   export DB_USER=theo
+   export DB_USER=your_username
    export DB_PASSWORD=your_password
    export DB_HOST=localhost
    export DB_PORT=5432
    ```
 
-4. Run database migrations:
+4. Set GDAL/GEOS library paths:
+   ```bash
+   # For macOS with ARM64 architecture (M1/M2 Mac)
+   export GDAL_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgdal.so
+   export GEOS_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgeos_c.so
+   
+   # For Intel Mac or Linux
+   export GDAL_LIBRARY_PATH=/usr/lib/libgdal.so
+   export GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so
+   ```
+
+5. Run database migrations:
    ```bash
    python manage.py migrate
    ```
 
-5. Start the development server:
+6. Start the development server:
    ```bash
    python manage.py runserver
    ```
@@ -82,7 +159,21 @@ The project consists of the following main apps:
 A custom management command is provided to import tree data from CSV files:
 
 ```bash
-python manage.py import_trees path/to/trees.csv
+# For Docker setup
+docker-compose exec web python manage.py import_trees "Tree Dataset_De Anza College_Backup.csv"
+
+# For local setup
+python manage.py import_trees "Tree Dataset_De Anza College_Backup.csv"
+```
+
+You can also export and restore tree data using Django's dumpdata/loaddata commands:
+
+```bash
+# Export tree data
+docker-compose exec web python manage.py dumpdata trees.Tree > trees_backup.json
+
+# Restore tree data
+docker-compose exec web python manage.py loaddata trees_backup.json
 ```
 
 ## API Endpoints
@@ -94,8 +185,24 @@ python manage.py import_trees path/to/trees.csv
 
 ## Development and Production Environments
 
-- Development: `config/settings.py`
-- Production: Use `docker-compose.prod.yml` with appropriate environment variables
+The Docker setup supports both development and production environments:
+
+### Development
+- Uses the `development` target in Dockerfile
+- Mounts code as volume for live reloading
+- Uses Django's development server (`runserver`)
+- Set via `docker-compose.yml`
+
+### Production
+- Uses the `production` target in Dockerfile
+- Uses Gunicorn as the WSGI server
+- Collects static files automatically
+- Set via `docker-compose.prod.yml`
+
+```bash
+# For production deployment
+docker-compose -f docker-compose.prod.yml up --build -d
+```
 
 ## Custom User Model
 
@@ -110,21 +217,83 @@ The project implements a custom user model with fields for:
 
 Key environment variables:
 - `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`: Database connection details
+- `DEBUG`: Enable/disable debug mode (1 or 0)
+- `SECRET_KEY`: Django secret key
 - `ALLOWED_HOSTS`: Allowed host domains
-- `IN_DOCKER`: Flag to determine Docker environment (for GDAL/GEOS library path settings)
+- `GDAL_LIBRARY_PATH`, `GEOS_LIBRARY_PATH`: Paths to GDAL/GEOS libraries
+- `IN_DOCKER`: Flag to determine Docker environment (for library path settings)
+
+## Troubleshooting
+
+### GDAL Library Issues
+If you encounter GDAL library errors:
+
+```
+OSError: /usr/lib/libgdal.so: cannot open shared object file: No such file or directory
+```
+
+Ensure the correct library paths are set in your environment:
+
+```bash
+# Check library locations
+docker-compose exec web find / -name "libgdal.so*" 2>/dev/null
+
+# Check GDAL version
+docker-compose exec web gdal-config --version
+```
+
+ARM64 architecture (M1/M2 Mac) users should use:
+```
+GDAL_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgdal.so
+GEOS_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgeos_c.so
+```
+
+### Poetry Dependency Issues
+If you encounter Poetry dependency errors:
+
+```bash
+# Update lock file
+poetry lock
+
+# Within Docker environment
+docker run --rm -v $(pwd):/app -w /app python:3.12-slim bash -c "pip install poetry && poetry lock"
+```
+
+### Database Connection Issues
+If the web service can't connect to the database:
+
+1. Ensure the database service is healthy:
+   ```bash
+   docker-compose logs db
+   ```
+
+2. Make sure the `DB_HOST` is set to `db` (the service name) in Docker environment
+
+3. Check database connection manually:
+   ```bash
+   docker-compose exec db psql -U datreemap -d datreemap -c "\l"
+   ```
 
 ## Production Deployment Considerations
 
 For production deployment:
-- Set `DEBUG=False`
+- Set `DEBUG=0` in `.env`
 - Configure a secure `SECRET_KEY`
 - Use HTTPS
 - Set up proper static file serving
 - Apply security settings (HSTS, XSS protection, etc.)
+- Use the production Docker Compose file:
+  ```bash
+  docker-compose -f docker-compose.prod.yml up --build -d
+  ```
 
 ## Running Tests
 
 ```bash
+# For Docker setup
+docker-compose exec web python manage.py test
+
+# For local setup
 python manage.py test
 ```
 
@@ -143,3 +312,5 @@ python manage.py test
 ---
 
 This project is a web application utilizing Geographic Information Systems to visualize and manage tree data across the De Anza campus. 
+
+For detailed Docker setup guide, see [DOCKER_SETUP.md](DOCKER_SETUP.md). 
