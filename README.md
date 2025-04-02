@@ -2,6 +2,27 @@
 
 A web application for visualizing and managing tree data on the De Anza campus. Built with Django and PostGIS, this application provides an interactive map interface to explore trees on campus.
 
+<<<<<<< Updated upstream
+=======
+## Table of Contents
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Installation and Setup](#installation-and-setup)
+  - [Using Docker (Recommended)](#using-docker-recommended)
+  - [Local Development Setup](#local-development-setup)
+- [Importing Tree Data](#importing-tree-data)
+- [API Endpoints](#api-endpoints)
+- [Development and Production Environments](#development-and-production-environments)
+- [Custom User Model](#custom-user-model)
+- [Environment Variables](#environment-variables)
+- [Troubleshooting](#troubleshooting)
+- [Production Deployment Considerations](#production-deployment-considerations)
+- [Running Tests](#running-tests)
+- [Contributing](#contributing)
+- [License](#license)
+
+>>>>>>> Stashed changes
 ## Features
 
 - Interactive map visualization of tree data
@@ -22,8 +43,36 @@ A web application for visualizing and managing tree data on the De Anza campus. 
 
 The project consists of the following main apps:
 
+<<<<<<< Updated upstream
 - **trees**: Models and views for tree data management
 - **users**: Custom user account and profile management
+=======
+```
+DATreeMap-test/
+├── config/                 # Django project settings
+│   ├── settings.py         # Project settings file
+│   ├── urls.py             # URL routing
+│   └── wsgi.py             # WSGI configuration
+├── trees/                  # Tree data app
+│   ├── management/         # Django management commands
+│   │   └── commands/       # Custom commands
+│   │       ├── import_trees.py  # Tree data import
+│   │       └── wait_for_db.py   # DB connection wait
+│   ├── models.py           # Data models
+│   ├── views.py            # View functions
+│   └── urls.py             # URL routing
+├── users/                  # User management app
+├── static/                 # Static files
+├── templates/              # HTML templates
+├── Dockerfile              # Docker image configuration
+├── docker-compose.yml      # Docker services setup
+├── docker-compose.prod.yml # Production Docker setup
+├── pyproject.toml          # Python dependency management
+├── poetry.lock             # Poetry dependency lock file
+├── start.sh                # Startup script
+└── .env                    # Environment variables
+```
+>>>>>>> Stashed changes
 
 ## Installation and Setup
 
