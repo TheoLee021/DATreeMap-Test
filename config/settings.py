@@ -33,7 +33,7 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME', 'datreemap'),
         'USER': os.environ.get('DB_USER', 'theo'),
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
@@ -146,15 +146,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Auth
 AUTH_USER_MODEL = 'users.User'
 
-# GDAL 및 GEOS 라이브러리 경로 (Docker 환경에서는 다를 수 있음)
-if os.environ.get('IN_DOCKER', False):
-    # Docker 내부에서는 시스템 라이브러리 사용
-    GDAL_LIBRARY_PATH = None
-    GEOS_LIBRARY_PATH = None
-else:
-    # 로컬 개발 환경에서는 기존 설정 유지
-    GDAL_LIBRARY_PATH = '/opt/homebrew/lib/libgdal.dylib'
-    GEOS_LIBRARY_PATH = '/opt/homebrew/lib/libgeos_c.dylib'
+# GDAL 설정
+GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH', '/usr/lib/aarch64-linux-gnu/libgdal.so')
+GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH', '/usr/lib/aarch64-linux-gnu/libgeos_c.so')
 
 # REST Framework 설정 (settings.py 맨 아래에 추가)
 REST_FRAMEWORK = {
